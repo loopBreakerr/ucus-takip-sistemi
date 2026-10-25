@@ -1,0 +1,22 @@
+# .NET
+bin/
+obj/
+*.user
+.vs/
+
+# Gizli bilgiler (API key'ler buraya asla commitlenmez)
+.env
+appsettings.Development.json
+secrets.json
+
+# Flutter
+.dart_tool/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# IDE / sistem
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
