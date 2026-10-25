@@ -1,0 +1,77 @@
+Table Users {
+  id int [pk, increment]
+  email varchar [unique, not null]
+  password_hash varchar [not null]
+  role varchar [not null, note: 'user veya admin']
+  created_at datetime
+}
+
+Table Aircraft {
+  id int [pk, increment]
+  icao_hex varchar [unique, note: 'ADSB.lol uçak kimliği']
+  callsign varchar [note: 'çağrı kodu, ör. THY1']
+}
+
+Table Flights {
+  id int [pk, increment]
+  flight_number varchar [not null, note: 'ör. TK 1']
+  flight_date date [not null]
+  origin varchar(3) [not null]
+  destination varchar(3) [not null]
+  aircraft_id int [null, note: 'eşleşme yoksa boş']
+}
+
+Table UserFlights {
+  user_id int [not null]
+  flight_id int [not null]
+  added_at datetime
+
+  indexes {
+    (user_id, flight_id) [pk]
+  }
+}
+
+Table PriceAlerts {
+  id int [pk, increment]
+  user_id int [not null]
+  origin varchar(3) [not null]
+  destination varchar(3) [not null]
+  travel_date date [not null]
+  target_price decimal [not null]
+  currency varchar(3)
+  is_active boolean [default: true]
+  created_at datetime
+}
+
+Table PriceHistory {
+  id int [pk, increment]
+  origin varchar(3) [not null]
+  destination varchar(3) [not null]
+  travel_date date [not null]
+  price decimal [not null]
+  currency varchar(3)
+  is_simulated boolean [note: 'simüle fiyat mı']
+  checked_at datetime
+}
+
+Table Notifications {
+  id int [pk, increment]
+  user_id int [not null]
+  alert_id int [null, note: 'hangi alarmdan geldi']
+  message varchar [not null]
+  is_read boolean [default: false]
+  created_at datetime
+}
+
+Table ApiUsage {
+  id int [pk, increment]
+  month varchar(7) [unique, note: 'ör. 2026-10']
+  request_count int [default: 0]
+}
+
+Ref: Flights.aircraft_id > Aircraft.id
+Ref: UserFlights.user_id > Users.id
+Ref: UserFlights.flight_id > Flights.id
+Ref: PriceAlerts.user_id > Users.id
+Ref: Notifications.user_id > Users.id
+Ref: Notifications.alert_id > PriceAlerts.id
