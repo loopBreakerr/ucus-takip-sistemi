@@ -1,0 +1,105 @@
+@using System.Globalization
+@model FlightSearchViewModel
+@{
+    ViewData["Title"] = "Uçuş Ara";
+
+    static string FormatDuration(int minutes)
+    {
+        var hours = minutes / 60;
+        var rest = minutes % 60;
+        if (hours == 0) return $"{rest}dk";
+        return rest == 0 ? $"{hours}s" : $"{hours}s {rest}dk";
+    }
+}
+
+<h1 class="h3 mb-4">Uçuş Ara</h1>
+
+<form method="get" asp-controller="Flights" asp-action="Index" class="row g-3 align-items-end mb-4">
+    <div class="col-12 col-md-3">
+        <label for="From" class="form-label">Kalkış</label>
+        <input id="From" name="From" value="@Model.From" class="form-control text-uppercase"
+               placeholder="IST" maxlength="3" required />
+        <div class="form-text">3 harfli IATA kodu</div>
+    </div>
+    <div class="col-12 col-md-3">
+        <label for="To" class="form-label">Varış</label>
+        <input id="To" name="To" value="@Model.To" class="form-control text-uppercase"
+               placeholder="FCO" maxlength="3" required />
+        <div class="form-text">3 harfli IATA kodu</div>
+    </div>
+    <div class="col-12 col-md-3">
+        <label for="Date" class="form-label">Tarih</label>
+        <input id="Date" name="Date" type="date" value="@Model.Date?.ToString("yyyy-MM-dd")"
+               class="form-control" required />
+    </div>
+    <div class="col-12 col-md-3">
+        <button type="submit" class="btn btn-primary w-100">Ara</button>
+    </div>
+</form>
+
+@if (Model.Searched)
+{
+    if (Model.ErrorMessage is not null)
+    {
+        <div class="alert @(Model.ServiceUnavailable ? "alert-danger" : "alert-warning")" role="alert">
+            @Model.ErrorMessage
+        </div>
+    }
+    else if (Model.Result is { Flights.Count: 0 })
+    {
+        <div class="alert alert-info" role="alert">Sefer bulunamadı.</div>
+    }
+    else if (Model.Result is { } result)
+    {
+        <h2 class="h5 mb-3">
+            @result.From → @result.To
+            <span class="text-muted fw-normal">· @result.Date.ToString("dd.MM.yyyy") · @result.Flights.Count sefer</span>
+        </h2>
+
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th>Sefer No</th>
+                        <th>Havayolu</th>
+                        <th>Kalkış</th>
+                        <th>Varış</th>
+                        <th>Süre</th>
+                        <th>Fiyat</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var flight in result.Flights)
+                    {
+                        var nextDay = flight.ArrivalTime.Date > flight.DepartureTime.Date;
+                        <tr>
+                            <td>@flight.FlightNumber</td>
+                            <td>@flight.Airline</td>
+                            <td>@flight.DepartureTime.ToString("HH:mm")</td>
+                            <td>
+                                @flight.ArrivalTime.ToString("HH:mm")
+                                @if (nextDay)
+                                {
+                                    <sup class="text-muted">+1</sup>
+                                }
+                            </td>
+                            <td>@FormatDuration(flight.DurationMinutes)</td>
+                            <td>
+                                @flight.Price.ToString("0.##", CultureInfo.InvariantCulture) @flight.Currency
+                                @if (flight.IsSimulated)
+                                {
+                                    <span class="badge text-bg-secondary ms-1">simüle</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (result.Source == "simulated")
+        {
+            <p class="text-muted small">Gösterilen fiyatlar ve saatler simülasyon verisidir, gerçek sefer bilgisi değildir.</p>
+        }
+    }
+}
