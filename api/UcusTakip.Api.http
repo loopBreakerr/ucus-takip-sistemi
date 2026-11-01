@@ -1,6 +1,6 @@
 @UcusTakip.Api_HostAddress = http://localhost:5199
 
-GET {{UcusTakip.Api_HostAddress}}/weatherforecast/
+GET {{UcusTakip.Api_HostAddress}}/api/flights/search?from=IST&to=FCO&date=2026-12-15
 Accept: application/json
 
 ###
