@@ -17,6 +17,7 @@ class _AccountScreenState extends State<AccountScreen> {
   final _password = TextEditingController();
   Account? _account;
   bool _registering = false;
+  bool _showPassword = false;
   bool _restored = false;
   bool _busy = false;
   String? _error;
@@ -83,13 +84,17 @@ class _AccountScreenState extends State<AccountScreen> {
         _password.clear();
         setState(() {
           _registering = false;
+          _showPassword = false;
           _notice = 'Hesabın oluşturuldu. Şimdi giriş yapabilirsin.';
         });
       } else {
         final account = await _api.login(email, password);
         if (!mounted) return;
         _password.clear();
-        setState(() => _account = account);
+        setState(() {
+          _account = account;
+          _showPassword = false;
+        });
       }
     });
   }
@@ -122,21 +127,7 @@ class _AccountScreenState extends State<AccountScreen> {
               shrinkWrap: true,
               children: [
                 if (_busy) const LinearProgressIndicator(),
-                if (_error case final error?)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Text(
-                      error,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                    ),
-                  ),
-                if (_notice case final notice?)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Text(notice),
-                  ),
+                if (!_restored || account != null) _feedback(context),
                 if (!_restored) ...[
                   if (!_busy)
                     OutlinedButton(
@@ -173,84 +164,213 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
 
-  Widget _buildForm(BuildContext context) {
-    final action = _registering ? 'Kayıt ol' : 'Giriş yap';
-    return AutofillGroup(
-      child: Form(
-        key: _form,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(action, style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _email,
-              enabled: !_busy,
-              decoration: const InputDecoration(
-                labelText: 'E-posta',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.emailAddress,
-              textInputAction: TextInputAction.next,
-              autofillHints: const [AutofillHints.email],
-              validator: (value) {
-                final email = value?.trim() ?? '';
-                return email.length <= 254 &&
-                        RegExp(r'^[^\s@]+@[^\s@]+$').hasMatch(email)
-                    ? null
-                    : 'Geçerli bir e-posta adresi gir.';
-              },
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _password,
-              enabled: !_busy,
-              decoration: const InputDecoration(
-                labelText: 'Parola',
-                border: OutlineInputBorder(),
-              ),
-              obscureText: true,
-              autofillHints: [
-                _registering
-                    ? AutofillHints.newPassword
-                    : AutofillHints.password,
+  void _switchMode(bool registering) {
+    if (_registering == registering) return;
+    FocusScope.of(context).unfocus();
+    final email = _email.value;
+    _form.currentState?.reset();
+    _email.value = email;
+    _password.clear();
+    setState(() {
+      _registering = registering;
+      _showPassword = false;
+      _error = null;
+      _notice = null;
+    });
+  }
+
+  Widget _feedback(BuildContext context) {
+    final message = _error ?? _notice;
+    if (message == null) return const SizedBox.shrink();
+
+    final colors = Theme.of(context).colorScheme;
+    final isError = _error != null;
+    final foreground = isError
+        ? colors.onErrorContainer
+        : colors.onPrimaryContainer;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Semantics(
+        liveRegion: true,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: isError ? colors.errorContainer : colors.primaryContainer,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  isError ? Icons.error_outline : Icons.check_circle_outline,
+                  color: foreground,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(message, style: TextStyle(color: foreground)),
+                ),
               ],
-              onFieldSubmitted: (_) => _submit(),
-              validator: (value) {
-                final password = value ?? '';
-                if (password.isEmpty) return 'Parolanı gir.';
-                if (_registering &&
-                    (password.length < 6 ||
-                        !RegExp(r'[0-9]').hasMatch(password))) {
-                  return 'Parola en az 6 karakter ve 1 rakam içermeli.';
-                }
-                return null;
-              },
             ),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: _busy ? null : _submit,
-              child: Text(action),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildForm(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final action = _registering ? 'Hesap oluştur' : 'Giriş yap';
+
+    return Card(
+      margin: EdgeInsets.zero,
+      color: colors.surfaceContainerLowest,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: BorderSide(color: colors.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: AutofillGroup(
+          child: Form(
+            key: _form,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: colors.primaryContainer,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Icon(
+                        Icons.flight_takeoff_rounded,
+                        color: colors.onPrimaryContainer,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  _registering ? 'Hesabını oluştur' : 'Tekrar hoş geldin',
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  _registering
+                      ? 'E-posta adresin ve bir parola ile Uçuş Takip hesabı oluştur.'
+                      : 'Uçuş Takip hesabına e-posta adresinle giriş yap.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SegmentedButton<bool>(
+                  showSelectedIcon: false,
+                  segments: const [
+                    ButtonSegment(value: false, label: Text('Giriş yap')),
+                    ButtonSegment(value: true, label: Text('Kayıt ol')),
+                  ],
+                  selected: {_registering},
+                  onSelectionChanged: _busy
+                      ? null
+                      : (selection) => _switchMode(selection.single),
+                ),
+                const SizedBox(height: 20),
+                _feedback(context),
+                TextFormField(
+                  controller: _email,
+                  enabled: !_busy,
+                  decoration: InputDecoration(
+                    labelText: 'E-posta',
+                    prefixIcon: const Icon(Icons.alternate_email),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                  autocorrect: false,
+                  autofillHints: const [AutofillHints.email],
+                  validator: (value) {
+                    final email = value?.trim() ?? '';
+                    return email.length <= 254 &&
+                            RegExp(r'^[^\s@]+@[^\s@]+$').hasMatch(email)
+                        ? null
+                        : 'Geçerli bir e-posta adresi gir.';
+                  },
+                ),
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: _password,
+                  enabled: !_busy,
+                  decoration: InputDecoration(
+                    labelText: 'Parola',
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    helperText: _registering
+                        ? 'En az 6 karakter ve 1 rakam'
+                        : null,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    suffixIcon: IconButton(
+                      tooltip: _showPassword
+                          ? 'Parolayı gizle'
+                          : 'Parolayı göster',
+                      onPressed: _busy
+                          ? null
+                          : () =>
+                                setState(() => _showPassword = !_showPassword),
+                      icon: Icon(
+                        _showPassword
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                      ),
+                    ),
+                  ),
+                  obscureText: !_showPassword,
+                  autocorrect: false,
+                  enableSuggestions: false,
+                  textInputAction: TextInputAction.done,
+                  autofillHints: [
+                    _registering
+                        ? AutofillHints.newPassword
+                        : AutofillHints.password,
+                  ],
+                  onFieldSubmitted: (_) => _submit(),
+                  validator: (value) {
+                    final password = value ?? '';
+                    if (password.isEmpty) return 'Parolanı gir.';
+                    if (_registering &&
+                        (password.length < 6 ||
+                            !RegExp(r'[0-9]').hasMatch(password))) {
+                      return 'En az 6 karakter ve 1 rakam gir.';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
+                FilledButton.icon(
+                  onPressed: _busy ? null : _submit,
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                  icon: Icon(
+                    _registering ? Icons.person_add_alt_1 : Icons.login,
+                  ),
+                  label: Text(_busy ? 'İşleniyor…' : action),
+                ),
+              ],
             ),
-            TextButton(
-              onPressed: _busy
-                  ? null
-                  : () {
-                      _password.clear();
-                      _form.currentState?.reset();
-                      setState(() {
-                        _registering = !_registering;
-                        _error = null;
-                        _notice = null;
-                      });
-                    },
-              child: Text(
-                _registering
-                    ? 'Zaten hesabın var mı? Giriş yap'
-                    : 'Hesabın yok mu? Kayıt ol',
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
