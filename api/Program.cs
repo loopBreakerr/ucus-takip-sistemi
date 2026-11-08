@@ -70,6 +70,14 @@ builder.Services
     });
 builder.Services.AddAuthorization();
 
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddCors(options => options.AddPolicy("FlutterLocal", policy => policy
+        .WithOrigins("http://localhost:7357")
+        .WithMethods("GET", "POST")
+        .WithHeaders("Authorization", "Content-Type")));
+}
+
 var app = builder.Build();
 
 // Başlangıçta rolleri ve (tanımlıysa) yönetici hesabını oluştur. Veritabanına ulaşılamazsa API çökmez.
@@ -137,6 +145,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
     app.UseSwagger();
     app.UseSwaggerUI();
+    app.UseCors("FlutterLocal");
 }
 
 app.UseHttpsRedirection();

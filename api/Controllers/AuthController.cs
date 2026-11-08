@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using UcusTakip.Api.Services;
 using UcusTakip.Data;
 using UcusTakip.Data.Entities;
@@ -11,6 +12,7 @@ public record AuthRequest(string? Email, string? Password);
 
 [ApiController]
 [Route("api/auth")]
+[ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 public class AuthController(
     UserManager<ApplicationUser> userManager,
     RoleManager<IdentityRole<int>> roleManager,
@@ -68,5 +70,25 @@ public class AuthController(
         var email = User.FindFirst("email")?.Value;
         var roles = User.FindAll("role").Select(c => c.Value).ToArray();
         return Ok(new { email, roles });
+    }
+
+    [HttpGet("users")]
+    [Authorize(Roles = IdentitySetup.AdminRole)]
+    public async Task<IActionResult> Users([FromServices] AppDbContext db, CancellationToken cancellation)
+    {
+        var users = await db.Users.AsNoTracking()
+            .OrderBy(user => user.Email)
+            .Select(user => new
+            {
+                email = user.Email,
+                roles = (from membership in db.UserRoles
+                         join role in db.Roles on membership.RoleId equals role.Id
+                         where membership.UserId == user.Id
+                         orderby role.Name
+                         select role.Name).ToArray()
+            })
+            .ToListAsync(cancellation);
+
+        return Ok(users);
     }
 }

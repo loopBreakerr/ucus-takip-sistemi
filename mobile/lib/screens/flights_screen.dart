@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/flight_search_response.dart';
 import '../services/flight_api_client.dart';
 import '../widgets/flight_card.dart';
+import 'account_screen.dart';
 
 class FlightsScreen extends StatefulWidget {
   const FlightsScreen({super.key, this.api});
@@ -164,6 +165,15 @@ class _FlightsScreenState extends State<FlightsScreen> {
                                   ),
                                 ],
                               ),
+                            ),
+                            IconButton(
+                              tooltip: 'Hesabım',
+                              onPressed: () => Navigator.of(context).push<void>(
+                                MaterialPageRoute(
+                                  builder: (_) => const AccountScreen(),
+                                ),
+                              ),
+                              icon: const Icon(Icons.account_circle_outlined),
                             ),
                           ],
                         ),

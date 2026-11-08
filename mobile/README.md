@@ -61,3 +61,37 @@ flutter test
 ```
 
 16 GB RAM'li geliştirme ortamında bellek baskısını azaltmak için Gradle Java heap sınırı 2 GB, worker sınırı 2 tutulur. Emülatörü bir kez başlat; tekrar tekrar yeni emülatör açma.
+
+## Hafta 3 hesap akışı
+
+Uçuş arama ziyaretçiye açıktır. Ana ekrandaki **Hesabım** düğmesi kayıt ve giriş ekranlarını açar. Kayıt olan hesap normal kullanıcı rolü alır. Yönetici hesabında **Kullanıcılar** ekranı görünür ve API listeyi yönetici rolüne göre korur. Çıkış, JWT’yi cihazdan siler. API belirteci süresi dolana kadar geçerli kabul eder. Android’de belirteç güvenli depoda, tarayıcı önizlemesinde sekmenin oturum deposunda tutulur.
+
+### PostgreSQL ve API
+
+Erişebildiğin boş bir PostgreSQL veritabanı oluştur. Bağlantı bilgilerini ve ilk yönetici hesabını API’yi çalıştıran terminalde ortam değişkenleriyle tanımla. API ve web aynı Identity tablolarını kullanır. İlk açılıştan önce ortak migration’ları uygula. Belirtilen yönetici zaten varsa parolası başlangıçta değiştirilmez.
+
+```bash
+read -rsp 'PostgreSQL bağlantı dizesi: ' ConnectionStrings__Default; echo
+export ConnectionStrings__Default
+export Admin__Email=admin@ucus.test
+read -rsp 'Yönetici parolası: ' Admin__Password; echo
+export Admin__Password
+export Jwt__Key="$(openssl rand -hex 32)"
+dotnet ef database update --project data/UcusTakip.Data.csproj --startup-project api/UcusTakip.Api.csproj
+dotnet run --project api/UcusTakip.Api.csproj --launch-profile http
+```
+
+Migration komutu için .NET 10 uyumlu `dotnet-ef` aracı gerekir. Sonraki çalıştırmalarda aynı JWT anahtarını kullanırsan mevcut oturumlar yeniden başlatma sonrasında da süreleri dolana kadar çalışır. Flutter `/api/auth/register`, `/api/auth/login`, `/api/auth/me` ve yönetici için `/api/auth/users` uçlarını kullanır.
+
+Bağlantı dizesi biçimi `Host=localhost;Database=ucus_takip;Username=...;Password=...`. Yönetici değişkenlerini vermeden normal kullanıcı akışını deneyebilirsin. Hesap veritabanı ayarı olmadan uçuş arama çalışır.
+
+### Emülatörsüz önizleme
+
+API çalışırken başka bir terminalde `mobile/` klasöründe çalıştır:
+
+```bash
+flutter pub get
+flutter run -d web-server --web-hostname localhost --web-port 7357
+```
+
+Tarayıcıda `http://localhost:7357` adresini aç. Bu adres, API’nin yalnızca Development ortamında izin verdiği Flutter adresidir. Tarayıcı API için varsayılan olarak `http://localhost:5199` adresini kullanır. Android hedefini emülatör olmadan derleme kontrolünden geçirmek için `flutter build apk --debug` çalıştır.
