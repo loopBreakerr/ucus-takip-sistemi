@@ -134,33 +134,80 @@ class _AccountScreenState extends State<AccountScreen> {
                       onPressed: _restore,
                       child: const Text('Yeniden dene'),
                     ),
-                ] else if (account != null) ...[
-                  Card(
-                    child: ListTile(
-                      leading: const Icon(Icons.account_circle_outlined),
-                      title: Text(account.email),
-                      subtitle: Text(account.roleLabel),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  if (account.isAdmin)
-                    FilledButton.icon(
-                      onPressed: _busy ? null : _openUsers,
-                      icon: const Icon(Icons.group_outlined),
-                      label: const Text('Kullanıcılar'),
-                    ),
-                  OutlinedButton.icon(
-                    onPressed: _busy ? null : _logout,
-                    icon: const Icon(Icons.logout),
-                    label: const Text('Çıkış yap'),
-                  ),
-                ] else
+                ] else if (account != null)
+                  _buildProfile(context, account)
+                else
                   _buildForm(context),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildProfile(BuildContext context, Account account) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Card.outlined(
+          margin: EdgeInsets.zero,
+          color: colors.surfaceContainerLowest,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(color: colors.outlineVariant),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CircleAvatar(
+                  radius: 24,
+                  backgroundColor: colors.primaryContainer,
+                  foregroundColor: colors.onPrimaryContainer,
+                  child: Icon(
+                    account.isAdmin
+                        ? Icons.admin_panel_settings_outlined
+                        : Icons.person_outline,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  account.isAdmin ? 'Yönetici paneli' : 'Hesap bilgileri',
+                  style: theme.textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 6),
+                Text(account.email, style: theme.textTheme.bodyMedium),
+                const SizedBox(height: 12),
+                _RoleBadge(account: account),
+              ],
+            ),
+          ),
+        ),
+        if (account.isAdmin) ...[
+          const SizedBox(height: 16),
+          Card.outlined(
+            margin: EdgeInsets.zero,
+            child: ListTile(
+              enabled: !_busy,
+              onTap: _busy ? null : _openUsers,
+              leading: Icon(Icons.group_outlined, color: colors.primary),
+              title: const Text('Kullanıcılar'),
+              subtitle: const Text('Kayıtlı hesapları ve rollerini görüntüle.'),
+              trailing: const Icon(Icons.chevron_right),
+            ),
+          ),
+        ],
+        const SizedBox(height: 16),
+        OutlinedButton.icon(
+          onPressed: _busy ? null : _logout,
+          icon: const Icon(Icons.logout),
+          label: const Text('Çıkış yap'),
+        ),
+      ],
     );
   }
 
@@ -388,63 +435,138 @@ class _UsersScreen extends StatefulWidget {
 class _UsersScreenState extends State<_UsersScreen> {
   late Future<List<Account>> _users = widget.api.users();
 
+  void _reload() => setState(() => _users = widget.api.users());
+
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Kullanıcılar')),
-    body: Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 600),
-        child: FutureBuilder<List<Account>>(
-          future: _users,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState != ConnectionState.done) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (snapshot.hasError) {
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      appBar: AppBar(title: const Text('Kullanıcılar')),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: FutureBuilder<List<Account>>(
+            future: _users,
+            builder: (context, snapshot) {
+              final loading = snapshot.connectionState != ConnectionState.done;
+              final accounts = snapshot.data ?? const <Account>[];
               final error = snapshot.error;
-              return Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
+
+              final header = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Kayıtlı hesaplar',
+                          style: theme.textTheme.headlineSmall,
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Listeyi yenile',
+                        onPressed: loading ? null : _reload,
+                        icon: const Icon(Icons.refresh),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  if (loading)
+                    const LinearProgressIndicator()
+                  else if (error != null) ...[
                     Text(
                       error is AccountApiException
                           ? error.message
                           : 'Kullanıcı listesi yüklenemedi.',
+                      style: TextStyle(color: theme.colorScheme.error),
                     ),
                     if (error is! AccountApiException ||
-                        error.statusCode != 401 && error.statusCode != 403)
-                      TextButton(
-                        onPressed: () =>
-                            setState(() => _users = widget.api.users()),
-                        child: const Text('Yeniden dene'),
+                        (error.statusCode != 401 && error.statusCode != 403))
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: TextButton(
+                          onPressed: _reload,
+                          child: const Text('Yeniden dene'),
+                        ),
                       ),
-                  ],
-                ),
-              );
-            }
-            final accounts = snapshot.requireData;
-            return ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: accounts.length,
-              itemBuilder: (context, index) {
-                final account = accounts[index];
-                return Card(
-                  child: ListTile(
-                    leading: Icon(
-                      account.isAdmin
-                          ? Icons.admin_panel_settings_outlined
-                          : Icons.person_outline,
+                  ] else ...[
+                    Text(
+                      accounts.isEmpty
+                          ? 'Kayıtlı hesap yok.'
+                          : '${accounts.length} hesap',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
-                    title: Text(account.email),
-                    subtitle: Text(account.roleLabel),
-                  ),
-                );
-              },
-            );
-          },
+                    const SizedBox(height: 12),
+                  ],
+                ],
+              );
+
+              return ListView.builder(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                itemCount: loading || error != null ? 1 : accounts.length + 1,
+                itemBuilder: (context, index) {
+                  if (index == 0) return header;
+                  final account = accounts[index - 1];
+                  return Card.outlined(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    color: theme.colorScheme.surfaceContainerLowest,
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        child: Icon(
+                          account.isAdmin
+                              ? Icons.admin_panel_settings_outlined
+                              : Icons.person_outline,
+                        ),
+                      ),
+                      title: Text(account.email),
+                      subtitle: Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: _RoleBadge(account: account),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
+}
+
+class _RoleBadge extends StatelessWidget {
+  const _RoleBadge({required this.account});
+
+  final Account account;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: account.isAdmin
+            ? colors.primaryContainer
+            : colors.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        child: Text(
+          account.roleLabel,
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: account.isAdmin
+                ? colors.onPrimaryContainer
+                : colors.onSurfaceVariant,
+          ),
+        ),
+      ),
+    );
+  }
 }
