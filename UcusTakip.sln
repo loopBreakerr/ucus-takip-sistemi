@@ -11,6 +11,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "web", "web", "{256F4E96-6A7
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UcusTakip.Web", "web\UcusTakip.Web.csproj", "{E21ADA8F-AAA1-4BCB-B7F1-3A85FC74BF9B}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "data", "data", "{015FE221-96B2-289B-A0E8-6E7354784A75}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UcusTakip.Data", "data\UcusTakip.Data.csproj", "{CD605BC2-DC54-41D4-83EC-237A7637369C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +49,18 @@ Global
 		{E21ADA8F-AAA1-4BCB-B7F1-3A85FC74BF9B}.Release|x64.Build.0 = Release|Any CPU
 		{E21ADA8F-AAA1-4BCB-B7F1-3A85FC74BF9B}.Release|x86.ActiveCfg = Release|Any CPU
 		{E21ADA8F-AAA1-4BCB-B7F1-3A85FC74BF9B}.Release|x86.Build.0 = Release|Any CPU
+		{CD605BC2-DC54-41D4-83EC-237A7637369C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CD605BC2-DC54-41D4-83EC-237A7637369C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CD605BC2-DC54-41D4-83EC-237A7637369C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{CD605BC2-DC54-41D4-83EC-237A7637369C}.Debug|x64.Build.0 = Debug|Any CPU
+		{CD605BC2-DC54-41D4-83EC-237A7637369C}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{CD605BC2-DC54-41D4-83EC-237A7637369C}.Debug|x86.Build.0 = Debug|Any CPU
+		{CD605BC2-DC54-41D4-83EC-237A7637369C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CD605BC2-DC54-41D4-83EC-237A7637369C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CD605BC2-DC54-41D4-83EC-237A7637369C}.Release|x64.ActiveCfg = Release|Any CPU
+		{CD605BC2-DC54-41D4-83EC-237A7637369C}.Release|x64.Build.0 = Release|Any CPU
+		{CD605BC2-DC54-41D4-83EC-237A7637369C}.Release|x86.ActiveCfg = Release|Any CPU
+		{CD605BC2-DC54-41D4-83EC-237A7637369C}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -52,5 +68,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{3711325A-8668-4EAC-93F1-F9FE3D360CFC} = {D82C56D6-B2CD-F611-9E31-04638F7EC30E}
 		{E21ADA8F-AAA1-4BCB-B7F1-3A85FC74BF9B} = {256F4E96-6A73-9ABE-786F-840C672A50F4}
+		{CD605BC2-DC54-41D4-83EC-237A7637369C} = {015FE221-96B2-289B-A0E8-6E7354784A75}
 	EndGlobalSection
 EndGlobal
